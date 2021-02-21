@@ -1,0 +1,13 @@
+# IntelliJ project files
+.idea
+*.iml
+
+# Maven build folder
+target
+
+# JDK-8214300
+.attach_pid*
+
+**/*.noarch.rpm
+**/pom.xml.versionsBackup
+
