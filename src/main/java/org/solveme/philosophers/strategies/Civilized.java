@@ -1,13 +1,15 @@
-package org.solveme.philosophers.dinners;
+package org.solveme.philosophers.strategies;
 
 import org.solveme.philosophers.Dinner;
 import org.solveme.philosophers.Fork;
 import org.solveme.philosophers.Philosopher;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CivilizedDinner extends Dinner<CivilizedDinner.CivilFork, CivilizedDinner.CivilPhilosopher> {
 
-    public CivilizedDinner(Settings settings) {
+public class Civilized extends Dinner<Civilized.CivilFork, Civilized.CivilPhilosopher> {
+
+    public Civilized(Settings settings) {
         super(settings);
     }
 
@@ -21,25 +23,27 @@ public class CivilizedDinner extends Dinner<CivilizedDinner.CivilFork, Civilized
         return new CivilPhilosopher(dinner, seatId);
     }
 
-    public static class CivilFork implements Fork {
+    static class CivilFork implements Fork {
+
+        private final AtomicBoolean busy = new AtomicBoolean(false);
 
         @Override
         public boolean isBusy() {
-            return false;
+            return busy.get();
         }
 
         @Override
         public boolean take() {
-            return false;
+            return busy.compareAndSet(false, true);
         }
 
         @Override
         public void release() {
-
+            busy.set(false);
         }
     }
 
-    public static class CivilPhilosopher extends Philosopher<CivilFork, CivilPhilosopher> {
+    static class CivilPhilosopher extends Philosopher<CivilFork, CivilPhilosopher> {
 
         public CivilPhilosopher(Dinner<CivilFork, CivilPhilosopher> dinner, int seatId) {
             super(dinner, seatId);
@@ -47,7 +51,7 @@ public class CivilizedDinner extends Dinner<CivilizedDinner.CivilFork, Civilized
 
         @Override
         public boolean acquireForks() {
-            return false;
+            return leftFork.take() && rightFork.take();
         }
 
     }

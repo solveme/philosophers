@@ -40,18 +40,28 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
 
     public void takeDinner() {
         while (!Thread.currentThread().isInterrupted()) {
-            if (acquireForks()) {
-                eat();
-
-            } else {
-                think();
-            }
+            act();
         }
 
         log.info(name + " finished the dinner");
     }
 
+    public void act() {
+        if (acquireForks()) {
+            eat();
+            releaseForks();
+
+        } else {
+            think();
+        }
+    }
+
     public abstract boolean acquireForks();
+
+    public void releaseForks() {
+        leftFork.release();
+        rightFork.release();
+    }
 
     public void eat() {
         timeRecorder.recordEating(() -> {

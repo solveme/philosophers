@@ -8,4 +8,4 @@ DINNER_JAR="./target/philosophers-${DINNER_VERSION}.jar"
 
 echo "Classpath: ${PICOCLI_JAR}:${DINNER_JAR}"
 
-java -cp "${PICOCLI_JAR}:${DINNER_JAR}" org.solveme.philosophers.PhilosophersDinnerApp
+java -cp "${PICOCLI_JAR}:${DINNER_JAR}" org.solveme.philosophers.DinnerApp CIVILIZED

@@ -75,9 +75,9 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
 
     }
 
-    public abstract F buildFork(Dinner<F, P> dinner);
+    protected abstract F buildFork(Dinner<F, P> dinner);
 
-    public abstract P buildPhilosopher(Dinner<F, P> dinner, int seatId);
+    protected abstract P buildPhilosopher(Dinner<F, P> dinner, int seatId);
 
     public void start() {
 

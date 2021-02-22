@@ -57,7 +57,7 @@ public class PhilosopherProgress implements AutoCloseable {
     }
 
     public void tick(long totalRunning) {
-        eatingProgress.stepTo(timeRecorder.getThinkingSpent());
+        eatingProgress.stepTo(timeRecorder.getEatingSpent());
         eatingProgress.maxHint(totalRunning);
         thinkingProgress.stepTo(timeRecorder.getThinkingSpent());
         thinkingProgress.maxHint(totalRunning);
