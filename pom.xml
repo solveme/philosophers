@@ -95,35 +95,46 @@
 
     <build>
         <plugins>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.4</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <artifactSet>
-                                <includes>
-                                    <include>org.slf4j:slf4j-api</include>
-                                    <include>ch.qos.logback:logback-core</include>
-                                    <include>ch.qos.logback:logback-classic</include>
-                                    <include>com.diogonunes:JColor</include>
-                                    <include>me.tongfei:progressbar</include>
-                                    <include>info.picocli:picocli</include>
-                                    <include>org.jline:jline</include>
-                                    <include>com.google.code.findbugs:jsr305</include>
-                                    <include>org.apache.commons:commons-lang3</include>
-                                </includes>
-                            </artifactSet>
-                        </configuration>
-                    </execution>
-                </executions>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <artifactSet>
+                        <includes>
+                            <include>org.slf4j:slf4j-api</include>
+                            <include>ch.qos.logback:logback-core</include>
+                            <include>ch.qos.logback:logback-classic</include>
+                            <include>com.diogonunes:JColor</include>
+                            <include>me.tongfei:progressbar</include>
+                            <include>info.picocli:picocli</include>
+                            <include>org.jline:jline</include>
+                            <include>com.google.code.findbugs:jsr305</include>
+                            <include>org.apache.commons:commons-lang3</include>
+                        </includes>
+                    </artifactSet>
+                </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>1.10</version>
+                <configuration>
+                    <platforms>
+                        <platform>unix</platform>
+                    </platforms>
+                    <programs>
+                        <program>
+                            <id>dinner</id>
+                            <mainClass>org.solveme.philosophers.DinnerApp</mainClass>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 

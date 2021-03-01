@@ -1,36 +1,40 @@
 package org.solveme.philosophers;
 
-import lombok.Builder;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.solveme.philosophers.progress.ProgressContext;
-import org.solveme.philosophers.util.ResultPrinter;
-import org.solveme.philosophers.util.TimeRecorder;
+import org.solveme.philosophers.recorders.DinnerTimeRecorder;
+import org.solveme.philosophers.results.ForkResults;
+import org.solveme.philosophers.results.PhilosopherResults;
 import org.solveme.philosophers.util.Util;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import static org.solveme.philosophers.Side.LEFT;
+import static org.solveme.philosophers.Side.RIGHT;
 import static org.solveme.philosophers.util.Util.OUT;
+import static org.solveme.philosophers.util.Util.normalizeSeatId;
 
 
 @Slf4j
 public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
 
-    protected final Settings settings;
+    protected final DinnerApp.Settings settings;
     protected final List<P> philosophers;
     protected final List<F> forks;
     protected final List<Thread> threads;
     protected final Coordinator<F, P> coordinator;
-    protected final TimeRecorder timeRecorder = new TimeRecorder();
+    protected final DinnerTimeRecorder timeRecorder = new DinnerTimeRecorder();
 
-    public Dinner(@Nonnull Settings settings,
+    public Dinner(@Nonnull DinnerApp.Settings settings,
                   @Nonnull List<P> philosophers,
                   @Nonnull List<F> forks,
                   @Nonnull List<Thread> threads,
@@ -43,7 +47,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
         this.coordinator = coordinator;
     }
 
-    public Dinner(@Nonnull Settings settings) {
+    public Dinner(@Nonnull DinnerApp.Settings settings) {
         this(
                 settings,
                 new ArrayList<>(settings.getSeatCount()),
@@ -56,28 +60,28 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
     public void init() {
 
         // Init forks
-        for (int i = 0; i < settings.getSeatCount(); i++) {
-            forks.add(buildFork(this));
+        for (int forkId = 0; forkId < settings.getSeatCount(); forkId++) {
+            forks.add(buildFork(this, forkId));
         }
 
         // Init philosophers
-        for (int i = 0; i < settings.getSeatCount(); i++) {
-            P philosopher = buildPhilosopher(this, i);
-            philosophers.add(i, philosopher);
-            threads.add(i, new Thread(() -> {
+        for (int seatId = 0; seatId < settings.getSeatCount(); seatId++) {
+            P philosopher = buildPhilosopher(this, Identity.at(seatId));
+            philosophers.add(seatId, philosopher);
+            threads.add(seatId, new Thread(() -> {
 
                 coordinator.readyToStart(philosopher);
                 Philosopher.Result result = philosopher.run();
                 coordinator.finishesWith(result);
 
-            }, philosopher.getName().padded()));
+            }, philosopher.getIdentity().padded()));
         }
 
     }
 
-    protected abstract F buildFork(Dinner<F, P> dinner);
+    protected abstract F buildFork(Dinner<F, P> dinner, int forkId);
 
-    protected abstract P buildPhilosopher(Dinner<F, P> dinner, int seatId);
+    protected abstract P buildPhilosopher(Dinner<F, P> dinner, Identity identity);
 
     public void start() {
 
@@ -85,12 +89,16 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
 
         if (!coordinator.waitForOtherToStart()) {
             return;
+        } else {
+            timeRecorder.recordStart();
         }
 
         displayProgress();
 
         log.warn("Dinner ends, wait for everybody to stop");
         threads.forEach(Thread::interrupt);
+
+        timeRecorder.recordEnd();
         coordinator.waitForOtherToFinish();
 
         displayResults();
@@ -100,8 +108,8 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
         OUT.println();
         try (ProgressContext progress = ProgressContext.from(philosophers)) {
             while (!Thread.currentThread().isInterrupted()) {
-                if (TimeUnit.MILLISECONDS.toSeconds(timeRecorder.getTotalSpent()) < settings.getDurationSeconds()) {
-                    timeRecorder.recordTotal(() -> {
+                if (timeRecorder.getRunningDuration().getSeconds() < settings.getDurationSeconds()) {
+                    timeRecorder.getRunningDuration().addActionDuration(() -> {
                         progress.tick(TimeUnit.SECONDS.toMillis(settings.getDurationSeconds()));
                         Util.pause(100);
                     });
@@ -114,9 +122,16 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
     }
 
     public void displayResults() {
-        ResultPrinter printer = ResultPrinter.from(coordinator.getResults());
         OUT.println();
-        printer.print();
+        PhilosopherResults.from(
+                coordinator.getResults(),
+                timeRecorder.getRunningDuration().toDuration()
+        ).print();
+        OUT.println();
+        ForkResults.from(
+                forks.stream().map(Fork::calculateResult).collect(Collectors.toList()),
+                timeRecorder.getRunningDuration().toDuration()
+        ).print();
         OUT.println();
     }
 
@@ -124,49 +139,62 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
         return forks.size();
     }
 
-    public P getPhilosopherBySeat(int seatId) {
-        checkSeatIndex(seatId);
-        return philosophers.get(seatId);
-    }
+    // Philosopher access
 
     public P getLeftNeighbour(int seatId) {
-        checkSeatIndex(seatId);
-        return getPhilosopherBySeat(seatId == getSeatCount() - 1 ? 0 : seatId + 1);
+        return getPhilosopherBySeatId(LEFT.neighbourOf(seatId));
     }
 
     public P getRightNeighbour(int seatId) {
-        checkSeatIndex(seatId);
-        return getPhilosopherBySeat(seatId == 0 ? getSeatCount() - 1 : seatId - 1);
+        return getPhilosopherBySeatId(RIGHT.neighbourOf(seatId));
     }
 
-    public F getLeftFork(int seatId) {
-        checkSeatIndex(seatId);
-        return forks.get(seatId);
+    // Thread access
+
+    public Thread getThreadOfLeftNeighbour(int callerSeatId) {
+        return getPhilosopherThreadBySeatId(LEFT.neighbourOf(callerSeatId));
     }
 
-    public F getRightFork(int seatId) {
-        checkSeatIndex(seatId);
-        return forks.get(seatId == 0 ? getSeatCount() - 1 : seatId - 1);
+    public Thread getThreadOfRightNeighbour(int callerSeatId) {
+        return getPhilosopherThreadBySeatId(RIGHT.neighbourOf(callerSeatId));
+    }
+
+    // Forks access
+
+    public F getLeftForkOf(int seatId) {
+        return getForkById(LEFT.forkIdOf(seatId));
+    }
+
+    public F getLeftForkOf(Identity identity) {
+        return getLeftForkOf(identity.getSeatId());
+    }
+
+    public F getRightForkOf(int seatId) {
+        return getForkById(RIGHT.forkIdOf(seatId));
+    }
+
+    public F getRightForkOf(Identity identity) {
+        return getRightForkOf(identity.getSeatId());
     }
 
     // Helpers
 
-    private void checkSeatIndex(int seatId) {
-        if (seatId >= getSeatCount()) {
-            throw new IllegalArgumentException("There is only " + getSeatCount() + " seats/forks on the table");
-        }
+    public P getPhilosopherBySeatId(int seatId) {
+        return philosophers.get(normalizeId(seatId));
     }
 
-
-    @Builder
-    @Getter
-    @RequiredArgsConstructor
-    public static class Settings {
-
-        private final int seatCount;
-        private final int durationSeconds;
-
+    public F getForkById(int forkId) {
+        return forks.get(normalizeId(forkId));
     }
+
+    public Thread getPhilosopherThreadBySeatId(int seatId) {
+        return threads.get(normalizeId(seatId));
+    }
+
+    private int normalizeId(int id) {
+        return normalizeSeatId(id, getSeatCount());
+    }
+
 
     @RequiredArgsConstructor
     public static class Coordinator<F extends Fork, P extends Philosopher<F, P>> {
@@ -179,7 +207,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
             this(
                     new CyclicBarrier(seatCount + 1),
                     new CountDownLatch(seatCount),
-                    new ArrayList<>(seatCount)
+                    Collections.synchronizedList(new ArrayList<>(seatCount))
             );
         }
 
@@ -202,12 +230,12 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
 
         public void readyToStart(P philosopher) {
             try {
-                log.info(philosopher.getName() + " waits for other to start");
+                log.info(philosopher.getIdentity() + " waits for other to start");
                 startTrigger.await();
 
             } catch (InterruptedException | BrokenBarrierException e) {
                 Thread.currentThread().interrupt();
-                log.info(philosopher.getName() + " left the dinner before starting");
+                log.info(philosopher.getIdentity() + " left the dinner before starting");
             }
         }
 

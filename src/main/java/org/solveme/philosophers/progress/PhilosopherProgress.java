@@ -7,8 +7,9 @@ import me.tongfei.progressbar.ProgressBarBuilder;
 import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.lang3.StringUtils;
 import org.solveme.philosophers.Fork;
+import org.solveme.philosophers.Identity;
 import org.solveme.philosophers.Philosopher;
-import org.solveme.philosophers.util.TimeRecorder;
+import org.solveme.philosophers.recorders.PhilosopherTimeRecorder;
 
 import static org.solveme.philosophers.util.Util.OUT;
 
@@ -21,18 +22,18 @@ public class PhilosopherProgress implements AutoCloseable {
 
     private final ProgressBar eatingProgress;
     private final ProgressBar thinkingProgress;
-    private final TimeRecorder timeRecorder;
+    private final PhilosopherTimeRecorder philosopherTimeRecorder;
 
-    public PhilosopherProgress(ProgressBar eatingProgress, ProgressBar thinkingProgress, TimeRecorder timeRecorder) {
+    public PhilosopherProgress(ProgressBar eatingProgress, ProgressBar thinkingProgress, PhilosopherTimeRecorder philosopherTimeRecorder) {
         this.eatingProgress = eatingProgress;
         this.thinkingProgress = thinkingProgress;
-        this.timeRecorder = timeRecorder;
+        this.philosopherTimeRecorder = philosopherTimeRecorder;
     }
 
     public static <F extends Fork, P extends Philosopher<F, P>> PhilosopherProgress from(P philosopher) {
         return new PhilosopherProgress(
                 getProgressBarForPhilosopher()
-                        .setTaskName(eatingBarName(philosopher.getName()))
+                        .setTaskName(eatingBarName(philosopher.getIdentity()))
                         .build(),
                 getProgressBarForPhilosopher()
                         .setTaskName(thinkingBarName())
@@ -48,18 +49,18 @@ public class PhilosopherProgress implements AutoCloseable {
                 .setUnit("ms", 100);
     }
 
-    private static String eatingBarName(Philosopher.Name name) {
+    private static String eatingBarName(Identity name) {
         return name.padded() + PROGRESS_TYPE_EATING;
     }
 
     private static String thinkingBarName() {
-        return StringUtils.repeat(' ', Philosopher.Name.MAX_LENGTH) + PROGRESS_TYPE_THINKING;
+        return StringUtils.repeat(' ', Identity.MAX_LENGTH) + PROGRESS_TYPE_THINKING;
     }
 
     public void tick(long totalRunning) {
-        eatingProgress.stepTo(timeRecorder.getEatingSpent());
+        eatingProgress.stepTo(philosopherTimeRecorder.getEatingDuration().getMillis());
         eatingProgress.maxHint(totalRunning);
-        thinkingProgress.stepTo(timeRecorder.getThinkingSpent());
+        thinkingProgress.stepTo(philosopherTimeRecorder.getThinkingDuration().getMillis());
         thinkingProgress.maxHint(totalRunning);
     }
 

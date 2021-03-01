@@ -1,15 +1,13 @@
 package org.solveme.philosophers;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.solveme.philosophers.util.TimeRecorder;
+import org.solveme.philosophers.recorders.PhilosopherTimeRecorder;
 
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 
 @Slf4j
@@ -17,25 +15,28 @@ import java.util.stream.Stream;
 public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
 
     protected final Dinner<F, P> dinner;
-    protected final Name name;
-    protected final int seatId;
+    protected final Identity identity;
     protected final F leftFork;
     protected final F rightFork;
 
     @Getter
-    private final TimeRecorder timeRecorder = new TimeRecorder();
+    private final PhilosopherTimeRecorder timeRecorder = new PhilosopherTimeRecorder();
 
-    public Philosopher(Dinner<F, P> dinner, int seatId) {
-        this(dinner, Name.values()[seatId], seatId, dinner.getLeftFork(seatId), dinner.getRightFork(seatId));
+    public Philosopher(Dinner<F, P> dinner, Identity identity) {
+        this(dinner, identity, dinner.getLeftForkOf(identity), dinner.getRightForkOf(identity));
     }
 
-    public Name getName() {
-        return name;
+    public Identity getIdentity() {
+        return identity;
+    }
+
+    public int getSeatId() {
+        return getIdentity().getSeatId();
     }
 
     public Result run() {
-        timeRecorder.recordTotal(this::takeDinner);
-        return Result.from(name, timeRecorder);
+        timeRecorder.getTotalDuration().addActionDuration(this::takeDinner);
+        return Result.from(identity, timeRecorder);
     }
 
     public void takeDinner() {
@@ -43,48 +44,50 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
             act();
         }
 
-        log.info(name + " finished the dinner");
+        log.info(identity + " finished the dinner");
     }
 
     public void act() {
         if (acquireForks()) {
             eat();
             releaseForks();
-
-        } else {
-            think();
         }
+
+        // Philosopher should spend some time on thinking even after successful eating
+        // to allow other philosophers to eat som food
+        think();
     }
 
     public abstract boolean acquireForks();
 
-    public void releaseForks() {
-        leftFork.release();
-        rightFork.release();
-    }
+    public abstract void releaseForks();
 
     public void eat() {
-        timeRecorder.recordEating(() -> {
+        timeRecorder.getEatingDuration().addActionDuration(() -> {
             try {
-                TimeUnit.MILLISECONDS.sleep((long) (Math.random() * 1000));
+                TimeUnit.MILLISECONDS.sleep(calculateActionDuration());
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.debug(name + " was asked to stop eating");
+                log.debug(identity + " was asked to stop eating");
             }
         });
     }
 
     public void think() {
-        timeRecorder.recordThinking(() -> {
+        timeRecorder.getThinkingDuration().addActionDuration(() -> {
             try {
-                TimeUnit.MILLISECONDS.sleep((long) (Math.random() * 1000));
+                TimeUnit.MILLISECONDS.sleep(calculateActionDuration());
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.debug(name + " was asked to stop thinking");
+                log.debug(identity + " was asked to stop thinking");
             }
         });
+    }
+
+    private long calculateActionDuration() {
+        return dinner.settings.getActionDurationMillis() + (long) (Math.random() * dinner.settings.getActionDurationMillis());
     }
 
     public F getLeftFork() {
@@ -96,63 +99,46 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
     }
 
     public P getLeftNeighbour() {
-        return dinner.getLeftNeighbour(seatId);
+        return dinner.getLeftNeighbour(getSeatId());
     }
 
     public P getRightNeighbour() {
-        return dinner.getRightNeighbour(seatId);
+        return dinner.getRightNeighbour(getSeatId());
+    }
+
+    public Thread getLeftNeighbourThread() {
+        return dinner.getThreadOfLeftNeighbour(getSeatId());
+    }
+
+    public Thread getRightNeighbourThread() {
+        return dinner.getThreadOfRightNeighbour(getSeatId());
     }
 
 
-    public enum Name {
-        DESCARTES,
-        ARISTOTLE,
-        PLATO,
-        KANT,
-        SOCRATES
-
-        //
-        ;
-
-        public static final int MAX_LENGTH = Stream.of(Name.values())
-                .max(Comparator.comparingInt(n -> n.toString().length()))
-                .map(n -> n.toString().length())
-                .orElse(12);
-
-        public static String padName(Name name) {
-            return StringUtils.leftPad(name.toString(), MAX_LENGTH);
-        }
-
-        @Override
-        public String toString() {
-            String name = name().toLowerCase();
-            return name.substring(0, 1).toUpperCase() + name.substring(1);
-        }
-
-        public String padded() {
-            return padName(this);
-        }
-
-    }
-
-    @RequiredArgsConstructor
     @Getter
-    public static class Result {
+    @RequiredArgsConstructor
+    @EqualsAndHashCode
+    public static class Result implements Comparable<Result> {
 
-        private final Name name;
+        private final Identity identity;
         private final Duration totalDuration;
         private final Duration eatingDuration;
         private final Duration thinkingDuration;
-        private final Duration wastedDuration;
+        private final Duration idleDuration;
 
-        public static Result from(Name name, TimeRecorder timeRecorder) {
+        public static Result from(Identity identity, PhilosopherTimeRecorder timeRecorder) {
             return new Result(
-                    name,
-                    Duration.ofMillis(timeRecorder.getTotalSpent()),
-                    Duration.ofMillis(timeRecorder.getEatingSpent()),
-                    Duration.ofMillis(timeRecorder.getThinkingSpent()),
-                    Duration.ofMillis(timeRecorder.getIdleSpent())
+                    identity,
+                    timeRecorder.getTotalDuration().toDuration(),
+                    timeRecorder.getEatingDuration().toDuration(),
+                    timeRecorder.getThinkingDuration().toDuration(),
+                    timeRecorder.getIdleDuration()
             );
+        }
+
+        @Override
+        public int compareTo(Result other) {
+            return identity.compareTo(other.getIdentity());
         }
 
     }

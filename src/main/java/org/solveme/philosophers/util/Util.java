@@ -23,19 +23,31 @@ public class Util {
         }
     }
 
-    public static void await(CyclicBarrier barrier, AwaitAction onAlreadyInterruptedAwait) {
+    public static void await(CyclicBarrier barrier, Action onAlreadyInterruptedAwait) {
         try {
             barrier.await();
 
         } catch (InterruptedException | BrokenBarrierException e) {
             Thread.currentThread().interrupt();
-            onAlreadyInterruptedAwait.exec();
+            onAlreadyInterruptedAwait.execute();
         }
     }
 
-    public interface AwaitAction {
+    public static int normalizeSeatId(int seatId, int total) {
+        if (seatId < -1 || seatId > total) {
+            throw new IllegalArgumentException("Illegal seatId " + seatId);
+        }
 
-        void exec();
+        int normalizedSeatId = seatId % total;
+
+        return normalizedSeatId < 0
+                ? total + normalizedSeatId
+                : normalizedSeatId;
+    }
+
+    public interface Action {
+
+        void execute();
 
     }
 
