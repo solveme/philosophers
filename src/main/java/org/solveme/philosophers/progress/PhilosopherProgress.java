@@ -24,7 +24,10 @@ public class PhilosopherProgress implements AutoCloseable {
     private final ProgressBar thinkingProgress;
     private final PhilosopherTimeRecorder philosopherTimeRecorder;
 
-    public PhilosopherProgress(ProgressBar eatingProgress, ProgressBar thinkingProgress, PhilosopherTimeRecorder philosopherTimeRecorder) {
+    public PhilosopherProgress(ProgressBar eatingProgress,
+                               ProgressBar thinkingProgress,
+                               PhilosopherTimeRecorder philosopherTimeRecorder
+    ) {
         this.eatingProgress = eatingProgress;
         this.thinkingProgress = thinkingProgress;
         this.philosopherTimeRecorder = philosopherTimeRecorder;

@@ -93,7 +93,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
             timeRecorder.recordStart();
         }
 
-        displayProgress();
+        progressLoop();
 
         log.warn("Dinner ends, wait for everybody to stop");
         threads.forEach(Thread::interrupt);
@@ -104,13 +104,43 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
         displayResults();
     }
 
+    public void progressLoop() {
+        if (settings.isShowProgress()) {
+            try (ProgressContext progress = ProgressContext.from(philosophers)) {
+                OUT.println();
+                progressLoop(() -> progress.tick(TimeUnit.SECONDS.toMillis(settings.getDurationSeconds())));
+                OUT.println();
+            }
+
+        } else {
+            progressLoop(() -> {
+                // no-op
+            });
+        }
+    }
+
+    public void progressLoop(Util.Action action) {
+        while (!Thread.currentThread().isInterrupted()) {
+            if (timeRecorder.getRunningDuration().getSeconds() < settings.getDurationSeconds()) {
+                timeRecorder.getRunningDuration().addActionDuration(() -> {
+                    action.execute();
+                    Util.pause(100);
+                });
+            } else {
+                break;
+            }
+        }
+    }
+
     public void displayProgress() {
         OUT.println();
         try (ProgressContext progress = ProgressContext.from(philosophers)) {
             while (!Thread.currentThread().isInterrupted()) {
                 if (timeRecorder.getRunningDuration().getSeconds() < settings.getDurationSeconds()) {
                     timeRecorder.getRunningDuration().addActionDuration(() -> {
-                        progress.tick(TimeUnit.SECONDS.toMillis(settings.getDurationSeconds()));
+                        if (settings.isShowProgress()) {
+                            progress.tick(TimeUnit.SECONDS.toMillis(settings.getDurationSeconds()));
+                        }
                         Util.pause(100);
                     });
                 } else {

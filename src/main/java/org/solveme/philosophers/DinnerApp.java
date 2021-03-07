@@ -29,7 +29,7 @@ public class DinnerApp implements Runnable {
     @CommandLine.Option(names = "-A", paramLabel = "SECONDS", description = "action (eating/thinking) duration factor in millis, default=${DEFAULT-VALUE}")
     int actionDuration = 20;
 
-    @CommandLine.Option(names = "-P", description = "show progress bars during dinner, default=${DEFAULT-VALUE}")
+    @CommandLine.Option(names = "-NP", description = "show progress bars during dinner, default=${DEFAULT-VALUE}")
     boolean showProgress = true;
 
     public static void main(String[] args) {
@@ -48,6 +48,7 @@ public class DinnerApp implements Runnable {
                 .seatCount(philosophersCount)
                 .durationSeconds(dinnerDuration)
                 .actionDurationMillis(actionDuration)
+                .showProgress(showProgress)
                 .build();
 
         Dinner dinner = strategy.getInitiator().apply(settings);
@@ -64,6 +65,7 @@ public class DinnerApp implements Runnable {
         private final int seatCount;
         private final int durationSeconds;
         private final int actionDurationMillis;
+        private final boolean showProgress;
 
     }
 
