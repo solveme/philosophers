@@ -12,12 +12,16 @@ public enum Side {
             seatId -> seatId
     ),
     RIGHT(
-            seatId -> seatId,
+            seatId -> seatId - 1,
             seatId -> seatId - 1
     );
 
     private final ToIntFunction<Integer> neighbourIdResolver;
     private final ToIntFunction<Integer> forkIdResolver;
+
+    public Side opposite() {
+        return this == LEFT ? RIGHT : LEFT;
+    }
 
     public int neighbourOf(Identity philosopher) {
         return neighbourOf(philosopher.getSeatId());

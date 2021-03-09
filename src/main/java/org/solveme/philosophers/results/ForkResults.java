@@ -10,6 +10,7 @@ import javax.annotation.Nonnull;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 
 @Slf4j
@@ -63,10 +64,10 @@ public class ForkResults extends ResultTable<Fork.Result> {
     }
 
 
-    static class IdColumn extends ResultColumn<Fork.Result, Integer> {
+    static class IdColumn extends ResultColumn<Fork.Result, Fork.Result> {
 
         public IdColumn() {
-            super(Fork.Result::getId);
+            super(Function.identity());
         }
 
         @Override
@@ -80,10 +81,10 @@ public class ForkResults extends ResultTable<Fork.Result> {
         }
 
         @Override
-        public String formatValue(Integer identity) {
-            String rightUser = Identity.at(identity).toString();
-            String leftUser = Identity.at(identity + 1).toString();
-            return StringUtils.rightPad("F" + identity + " " + leftUser + " / " + rightUser, getWidth());
+        public String formatValue(Fork.Result result) {
+            String leftUser = result.getLeftUser().toString();
+            String rightUser = result.getRightUser().toString();
+            return StringUtils.rightPad("F" + result.getId() + " " + leftUser + " / " + rightUser, getWidth());
         }
 
     }

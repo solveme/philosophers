@@ -24,6 +24,8 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
 
     public Philosopher(Dinner<F, P> dinner, Identity identity) {
         this(dinner, identity, dinner.getLeftForkOf(identity), dinner.getRightForkOf(identity));
+        leftFork.setRightUser(this.getIdentity());
+        rightFork.setLeftUser(this.getIdentity());
     }
 
     public Identity getIdentity() {
@@ -69,7 +71,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.debug(identity + " was asked to stop eating");
+                log.info(identity + " was asked to stop eating");
             }
         });
     }
@@ -81,7 +83,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.debug(identity + " was asked to stop thinking");
+                log.info(identity + " was asked to stop thinking");
             }
         });
     }

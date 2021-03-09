@@ -106,11 +106,11 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
 
     public void progressLoop() {
         if (settings.isShowProgress()) {
+            OUT.println();
             try (ProgressContext progress = ProgressContext.from(philosophers)) {
-                OUT.println();
                 progressLoop(() -> progress.tick(TimeUnit.SECONDS.toMillis(settings.getDurationSeconds())));
-                OUT.println();
             }
+            OUT.println();
 
         } else {
             progressLoop(() -> {
@@ -130,25 +130,6 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
                 break;
             }
         }
-    }
-
-    public void displayProgress() {
-        OUT.println();
-        try (ProgressContext progress = ProgressContext.from(philosophers)) {
-            while (!Thread.currentThread().isInterrupted()) {
-                if (timeRecorder.getRunningDuration().getSeconds() < settings.getDurationSeconds()) {
-                    timeRecorder.getRunningDuration().addActionDuration(() -> {
-                        if (settings.isShowProgress()) {
-                            progress.tick(TimeUnit.SECONDS.toMillis(settings.getDurationSeconds()));
-                        }
-                        Util.pause(100);
-                    });
-                } else {
-                    break;
-                }
-            }
-        }
-        OUT.println();
     }
 
     public void displayResults() {
