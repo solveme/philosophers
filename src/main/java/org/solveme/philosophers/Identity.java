@@ -1,7 +1,6 @@
 package org.solveme.philosophers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.solveme.philosophers.util.Util;
 
 import java.util.Comparator;
 import java.util.stream.Stream;
@@ -28,8 +27,12 @@ public enum Identity {
         return StringUtils.leftPad(name.toString(), MAX_LENGTH);
     }
 
+    /**
+     * @param seatId normalized
+     * @return philosopher identity
+     */
     public static Identity at(int seatId) {
-        return Identity.values()[Util.normalizeSeatId(seatId, Identity.values().length)];
+        return Identity.values()[seatId];
     }
 
     public int getSeatId() {

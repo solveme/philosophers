@@ -61,6 +61,7 @@ public class Synchronized extends Dinner<Synchronized.SynchronizedFork, Synchron
                                        Identity identity
         ) {
             super(dinner, identity);
+            // One of philosophers should acquire/release forks in reverse order to avoid deadlock
             acquiringOrder = getSeatId() != 0
                     ? AcquiringOrder.straight(identity, getLeftFork(), getRightFork())
                     : AcquiringOrder.reverse(identity, getLeftFork(), getRightFork());

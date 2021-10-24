@@ -18,16 +18,14 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.solveme.philosophers.Side.LEFT;
-import static org.solveme.philosophers.Side.RIGHT;
 import static org.solveme.philosophers.util.Util.OUT;
-import static org.solveme.philosophers.util.Util.normalizeSeatId;
 
 
 @Slf4j
 public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
 
     protected final DinnerApp.Settings settings;
+    protected final Table table;
     protected final List<P> philosophers;
     protected final List<F> forks;
     protected final List<Thread> threads;
@@ -35,12 +33,14 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
     protected final DinnerTimeRecorder timeRecorder = new DinnerTimeRecorder();
 
     public Dinner(@Nonnull DinnerApp.Settings settings,
+                  @Nonnull Table table,
                   @Nonnull List<P> philosophers,
                   @Nonnull List<F> forks,
                   @Nonnull List<Thread> threads,
                   @Nonnull Coordinator<F, P> coordinator
     ) {
         this.settings = settings;
+        this.table = table;
         this.philosophers = philosophers;
         this.forks = forks;
         this.threads = threads;
@@ -50,6 +50,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
     public Dinner(@Nonnull DinnerApp.Settings settings) {
         this(
                 settings,
+                new Table(settings.getSeatCount()),
                 new ArrayList<>(settings.getSeatCount()),
                 new ArrayList<>(settings.getSeatCount()),
                 new ArrayList<>(settings.getSeatCount()),
@@ -64,17 +65,25 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
             forks.add(buildFork(this, forkId));
         }
 
+        final Thread.UncaughtExceptionHandler exceptionHandler = (thread, throwable) -> {
+            log.error(throwable.getMessage());
+            stop();
+        };
+
         // Init philosophers
         for (int seatId = 0; seatId < settings.getSeatCount(); seatId++) {
-            P philosopher = buildPhilosopher(this, Identity.at(seatId));
+            P philosopher = buildPhilosopher(this, Identity.at(table.normalizeSeatId(seatId)));
             philosophers.add(seatId, philosopher);
-            threads.add(seatId, new Thread(() -> {
 
+            Thread philosopherThread = new Thread(() -> {
                 coordinator.readyToStart(philosopher);
                 Philosopher.Result result = philosopher.run();
-                coordinator.finishesWith(result);
+                coordinator.finishedWith(result);
+            });
 
-            }, philosopher.getIdentity().padded()));
+            philosopherThread.setName(philosopher.getIdentity().padded());
+            philosopherThread.setUncaughtExceptionHandler(exceptionHandler);
+            threads.add(seatId, philosopherThread);
         }
 
     }
@@ -102,6 +111,10 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
         coordinator.waitForOtherToFinish();
 
         displayResults();
+    }
+
+    public void stop() {
+
     }
 
     public void progressLoop() {
@@ -147,33 +160,33 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
     }
 
     public int getSeatCount() {
-        return forks.size();
+        return settings.getSeatCount();
     }
 
     // Philosopher access
 
     public P getLeftNeighbour(int seatId) {
-        return getPhilosopherBySeatId(LEFT.neighbourOf(seatId));
+        return getPhilosopherBySeatId(table.getLeftNeighbour(seatId));
     }
 
     public P getRightNeighbour(int seatId) {
-        return getPhilosopherBySeatId(RIGHT.neighbourOf(seatId));
+        return getPhilosopherBySeatId(table.getRightNeighbour(seatId));
     }
 
     // Thread access
 
     public Thread getThreadOfLeftNeighbour(int callerSeatId) {
-        return getPhilosopherThreadBySeatId(LEFT.neighbourOf(callerSeatId));
+        return getPhilosopherThreadBySeatId(table.getLeftNeighbour(callerSeatId));
     }
 
     public Thread getThreadOfRightNeighbour(int callerSeatId) {
-        return getPhilosopherThreadBySeatId(RIGHT.neighbourOf(callerSeatId));
+        return getPhilosopherThreadBySeatId(table.getRightNeighbour(callerSeatId));
     }
 
     // Forks access
 
     public F getLeftForkOf(int seatId) {
-        return getForkById(LEFT.forkIdOf(seatId));
+        return getForkById(table.leftForkIdFor(seatId));
     }
 
     public F getLeftForkOf(Identity identity) {
@@ -181,7 +194,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
     }
 
     public F getRightForkOf(int seatId) {
-        return getForkById(RIGHT.forkIdOf(seatId));
+        return getForkById(table.rightForkIdFor(seatId));
     }
 
     public F getRightForkOf(Identity identity) {
@@ -191,19 +204,15 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
     // Helpers
 
     public P getPhilosopherBySeatId(int seatId) {
-        return philosophers.get(normalizeId(seatId));
+        return philosophers.get(seatId);
     }
 
     public F getForkById(int forkId) {
-        return forks.get(normalizeId(forkId));
+        return forks.get(forkId);
     }
 
     public Thread getPhilosopherThreadBySeatId(int seatId) {
-        return threads.get(normalizeId(seatId));
-    }
-
-    private int normalizeId(int id) {
-        return normalizeSeatId(id, getSeatCount());
+        return threads.get(seatId);
     }
 
 
@@ -259,7 +268,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
             }
         }
 
-        public void finishesWith(Philosopher.Result result) {
+        public void finishedWith(Philosopher.Result result) {
             results.add(result);
             finishLatch.countDown();
         }

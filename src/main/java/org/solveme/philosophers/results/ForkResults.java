@@ -72,7 +72,7 @@ public class ForkResults extends ResultTable<Fork.Result> {
 
         @Override
         public int getWidth() {
-            return Identity.MAX_LENGTH * 2 + 5;
+            return Identity.MAX_LENGTH * 2 + 6;
         }
 
         @Override

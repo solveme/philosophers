@@ -33,18 +33,6 @@ public class Util {
         }
     }
 
-    public static int normalizeSeatId(int seatId, int total) {
-        if (seatId < -1 || seatId > total) {
-            throw new IllegalArgumentException("Illegal seatId " + seatId);
-        }
-
-        int normalizedSeatId = seatId % total;
-
-        return normalizedSeatId < 0
-                ? total + normalizedSeatId
-                : normalizedSeatId;
-    }
-
     public interface Action {
 
         void execute();
