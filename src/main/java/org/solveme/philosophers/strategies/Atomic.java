@@ -37,12 +37,12 @@ public class Atomic extends Dinner<Atomic.AtomicFork, Atomic.AtomicPhilosopher> 
         }
 
         @Override
-        public boolean doTake(Identity identity) {
+        protected boolean take0(Identity identity) {
             return holder.compareAndSet(FREE_FLAG, identity.getSeatId());
         }
 
         @Override
-        public void doRelease(Identity identity) {
+        protected void release0(Identity identity) {
             // Invariant guard: only holder is allowed to release fork
             if (identity.getSeatId() != holder.get()) {
                 throw new IllegalArgumentException(identity + " is not a holder of #" + id);

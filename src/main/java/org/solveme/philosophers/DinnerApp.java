@@ -51,7 +51,7 @@ public class DinnerApp implements Runnable {
                 .showProgress(showProgress)
                 .build();
 
-        Dinner dinner = strategy.getInitiator().apply(settings);
+        Dinner<?, ?> dinner = strategy.getInitiator().apply(settings);
         dinner.init();
         dinner.start();
     }

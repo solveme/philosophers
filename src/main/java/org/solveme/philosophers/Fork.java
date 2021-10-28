@@ -36,8 +36,12 @@ public abstract class Fork {
 
     public abstract boolean isBusy();
 
+    /**
+     * @param identity philosopher who tries to acquire this fork
+     * @return true in fork was successfully acquired
+     */
     public boolean take(Identity identity) {
-        if (doTake(identity)) {
+        if (take0(identity)) {
             takenTimestamp = System.nanoTime();
             return true;
         }
@@ -45,14 +49,17 @@ public abstract class Fork {
         return false;
     }
 
-    protected abstract boolean doTake(Identity identity);
+    protected abstract boolean take0(Identity identity);
 
+    /**
+     * @param identity owner philosopher
+     */
     public void release(Identity identity) {
         // After releasing other thread could update takenTimestamp,
         // so we make local copy for further usage duration calculation
         long taken = takenTimestamp;
 
-        doRelease(identity);
+        release0(identity);
 
         if (identity == leftUser) {
             timeRecorder.recordLeftUsage(System.nanoTime() - taken);
@@ -68,7 +75,7 @@ public abstract class Fork {
     /**
      * Invariants should be guarded by implementations
      */
-    protected abstract void doRelease(Identity identity);
+    protected abstract void release0(Identity identity);
 
     public Result calculateResult() {
         return Result.from(this);

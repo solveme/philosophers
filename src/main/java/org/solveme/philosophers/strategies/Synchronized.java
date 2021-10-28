@@ -36,7 +36,7 @@ public class Synchronized extends Dinner<Synchronized.SynchronizedFork, Synchron
         }
 
         @Override
-        public boolean doTake(Identity identity) {
+        protected boolean take0(Identity identity) {
             if (!isBusy()) {
                 log.debug("#{} acquired by {}", id, identity);
                 holder = identity.getSeatId();
@@ -47,7 +47,7 @@ public class Synchronized extends Dinner<Synchronized.SynchronizedFork, Synchron
         }
 
         @Override
-        public void doRelease(Identity identity) {
+        protected void release0(Identity identity) {
             holder = FREE_FLAG;
         }
     }

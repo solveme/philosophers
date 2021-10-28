@@ -29,12 +29,12 @@ public class TestingDinner extends Dinner<TestingDinner.TestingFork, TestingDinn
         }
 
         @Override
-        public boolean doTake(Identity identity) {
+        public boolean take0(Identity identity) {
             return false;
         }
 
         @Override
-        public void doRelease(Identity identity) {
+        public void release0(Identity identity) {
             // no-op
         }
     }
