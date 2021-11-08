@@ -5,6 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.solveme.philosophers.*;
 
 
+/**
+ * Straight forward solution that performs acquiring/releasing via intrinsic locks on forks objects. For preventing
+ * deadlock when all philosophers have acquired left fork and are waiting on releasing right fork (that would never
+ * happen in this case) ${@link AcquiringOrder} helper was introduced. This object would encapsulate acquiring order
+ * and would use inverted order for first philosopher ${@link SynchronizedPhilosopher#SynchronizedPhilosopher(Dinner, Identity)}
+ */
 public class Synchronized extends Dinner<Synchronized.SynchronizedFork, Synchronized.SynchronizedPhilosopher> {
 
     public Synchronized(DinnerApp.Settings settings) {

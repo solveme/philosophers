@@ -6,6 +6,9 @@ import org.solveme.philosophers.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
+/**
+ * Solution that utilizes CAS features of AtomicInteger for handling forks acquiring and releasing
+ */
 public class Atomic extends Dinner<Atomic.AtomicFork, Atomic.AtomicPhilosopher> {
 
     public Atomic(DinnerApp.Settings settings) {

@@ -238,7 +238,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
         public boolean waitForOtherToStart() {
             try {
                 startTrigger.await();
-                log.warn("Everybody is ready");
+                log.warn("Everybody is ready. Start!");
                 return true;
 
             } catch (InterruptedException | BrokenBarrierException e) {

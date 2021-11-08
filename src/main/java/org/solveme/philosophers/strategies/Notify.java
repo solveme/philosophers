@@ -6,6 +6,12 @@ import org.solveme.philosophers.*;
 import java.util.concurrent.TimeUnit;
 
 
+/**
+ * Solution based on usage of a condition queue inside fork acquire/release methods. Due to fact that for acquiring
+ * logic uses timeouts as a parameter in <code>wait()</code> calls we are safe from deadlock that may happen
+ * in "synchronized only" logic. Also <code>notify()</code> usage also helps to reduce forks idle thus
+ * increasing overall performance.
+ */
 public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> {
 
     public Notify(DinnerApp.Settings settings) {
