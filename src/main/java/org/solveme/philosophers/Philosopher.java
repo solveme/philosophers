@@ -3,6 +3,7 @@ package org.solveme.philosophers;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.solveme.philosophers.recorders.PhilosopherTimeRecorder;
 
@@ -12,12 +13,16 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RequiredArgsConstructor
-public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
+public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> extends RunnerAccessible {
 
     protected final Dinner<F, P> dinner;
     protected final Identity identity;
     protected final F leftFork;
     protected final F rightFork;
+
+    @Setter
+    @Getter
+    protected Runner runner;
 
     @Getter
     private final PhilosopherTimeRecorder timeRecorder = new PhilosopherTimeRecorder();
@@ -42,7 +47,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
     }
 
     public void takeDinner() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (!isShutdown()) {
             act();
         }
 
@@ -56,39 +61,79 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
         }
 
         // Philosopher should spend some time on thinking even after successful eating
-        // to allow other philosophers to eat som food
+        // to allow other philosophers to eat some food
         think();
     }
 
-    public abstract boolean acquireForks();
-
-    public abstract void releaseForks();
-
-    public void eat() {
-        timeRecorder.getEatingDuration().addActionDuration(() -> {
-            try {
-                TimeUnit.MILLISECONDS.sleep(calculateActionDuration());
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.info(identity + " was asked to stop eating");
-            }
-        });
+    public void interrupt() {
+        runner.interrupt();
     }
 
-    public void think() {
-        timeRecorder.getThinkingDuration().addActionDuration(() -> {
-            try {
-                TimeUnit.MILLISECONDS.sleep(calculateActionDuration());
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.info(identity + " was asked to stop thinking");
-            }
-        });
+    private void logWithThreadStatus(String message) {
+        assert runner == Runner.currentRunner();
+        log.trace(message + ", interrupted: {}", runner.isInterrupted());
     }
 
-    private long calculateActionDuration() {
+    protected abstract boolean acquireForks();
+
+    protected abstract void releaseForks();
+
+    protected void eat() {
+        if (isShutdown()) {
+            log.info("Skip eating due to shutdown");
+            return;
+        }
+        logWithThreadStatus("Started to eat");
+        timeRecorder.getEatingDuration().addActionDuration(this::eat0);
+    }
+
+    protected void eat0() {
+        try {
+            TimeUnit.MILLISECONDS.sleep(calculateActionDuration());
+
+        } catch (InterruptedException e) {
+            logActionInterruption("eating");
+            onEatingInterruption(isShutdown());
+        }
+    }
+
+    protected void onEatingInterruption(boolean isShutdown) {
+        // no-op
+    }
+
+    protected void think() {
+        if (isShutdown()) {
+            log.info("Skip thinking due to shutdown");
+            return;
+        }
+        logWithThreadStatus("Started to think");
+        timeRecorder.getThinkingDuration().addActionDuration(this::think0);
+    }
+
+    protected void think0() {
+        try {
+            TimeUnit.MILLISECONDS.sleep(calculateActionDuration());
+
+        } catch (InterruptedException e) {
+            logActionInterruption("thinking");
+            onThinkingInterruption(isShutdown());
+        }
+    }
+
+    protected void onThinkingInterruption(boolean isShutdown) {
+        // no-op
+    }
+
+    protected void logActionInterruption(String performedAction) {
+        if (isShutdown()) {
+            log.info("{} was asked to stop {} due shutdown", identity, performedAction);
+
+        } else {
+            log.trace("{} was asked to stop {}", identity, performedAction);
+        }
+    }
+
+    protected long calculateActionDuration() {
         return dinner.settings.getActionDurationMillis() + (long) (Math.random() * dinner.settings.getActionDurationMillis());
     }
 
@@ -108,15 +153,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> {
         return dinner.getRightNeighbour(getSeatId());
     }
 
-    public Thread getLeftNeighbourThread() {
-        return dinner.getThreadOfLeftNeighbour(getSeatId());
-    }
-
-    public Thread getRightNeighbourThread() {
-        return dinner.getThreadOfRightNeighbour(getSeatId());
-    }
-
-
+    
     @Getter
     @RequiredArgsConstructor
     @EqualsAndHashCode

@@ -28,7 +28,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
     protected final Table table;
     protected final List<P> philosophers;
     protected final List<F> forks;
-    protected final List<Thread> threads;
+    protected final List<Runner> threads;
     protected final Coordinator<F, P> coordinator;
     protected final DinnerTimeRecorder timeRecorder = new DinnerTimeRecorder();
 
@@ -36,7 +36,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
                   @Nonnull Table table,
                   @Nonnull List<P> philosophers,
                   @Nonnull List<F> forks,
-                  @Nonnull List<Thread> threads,
+                  @Nonnull List<Runner> threads,
                   @Nonnull Coordinator<F, P> coordinator
     ) {
         this.settings = settings;
@@ -67,7 +67,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
 
         final Thread.UncaughtExceptionHandler exceptionHandler = (thread, throwable) -> {
             log.error(throwable.getMessage());
-            stop();
+            abort();
         };
 
         // Init philosophers
@@ -75,11 +75,13 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
             P philosopher = buildPhilosopher(this, Identity.at(table.normalizeSeatId(seatId)));
             philosophers.add(seatId, philosopher);
 
-            Thread philosopherThread = new Thread(() -> {
+            Runner philosopherThread = new Runner(() -> {
                 coordinator.readyToStart(philosopher);
                 Philosopher.Result result = philosopher.run();
                 coordinator.finishedWith(result);
             });
+
+            philosopher.setRunner(philosopherThread);
 
             philosopherThread.setName(philosopher.getIdentity().padded());
             philosopherThread.setUncaughtExceptionHandler(exceptionHandler);
@@ -105,7 +107,11 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
         progressLoop();
 
         log.warn("Dinner ends, wait for everybody to stop");
-        threads.forEach(Thread::interrupt);
+        stop(true);
+    }
+
+    public void stop(boolean graceful) {
+        threads.forEach(r -> r.shutdown(graceful));
 
         timeRecorder.recordEnd();
         coordinator.waitForOtherToFinish();
@@ -113,8 +119,9 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
         displayResults();
     }
 
-    public void stop() {
-
+    public void abort() {
+        log.warn("Dinner aborted");
+        stop(false);
     }
 
     public void progressLoop() {
@@ -162,6 +169,11 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
     public int getSeatCount() {
         return settings.getSeatCount();
     }
+
+    public int getForkCount() {
+        return getSeatCount();
+    }
+
 
     // Philosopher access
 
@@ -242,8 +254,8 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
                 return true;
 
             } catch (InterruptedException | BrokenBarrierException e) {
-                Thread.currentThread().interrupt();
                 log.warn("Dinner is over due to interrupt");
+                Thread.currentThread().interrupt();
                 return false;
             }
         }
@@ -254,8 +266,8 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
                 startTrigger.await();
 
             } catch (InterruptedException | BrokenBarrierException e) {
-                Thread.currentThread().interrupt();
                 log.info(philosopher.getIdentity() + " left the dinner before starting");
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -264,6 +276,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
                 finishLatch.await();
 
             } catch (InterruptedException e) {
+                log.debug("Interruption during waiting for other to finish");
                 Thread.currentThread().interrupt();
             }
         }

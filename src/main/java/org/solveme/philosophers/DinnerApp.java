@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import static com.diogonunes.jcolor.Attribute.*;
+import static org.solveme.philosophers.util.Util.OUT;
 
 
 @CommandLine.Command(name = "dinner")
@@ -52,8 +53,21 @@ public class DinnerApp implements Runnable {
                 .build();
 
         Dinner<?, ?> dinner = strategy.getInitiator().apply(settings);
+        Thread shutdownHook = shutdownHook(dinner::abort);
+
+        try {
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
+
+        } catch (Throwable t) {
+            OUT.println("Failed to set up shutdown hook: " + t.getMessage());
+            t.printStackTrace(OUT);
+            System.exit(10);
+        }
+
         dinner.init();
         dinner.start();
+
+        Runtime.getRuntime().removeShutdownHook(shutdownHook);
     }
 
 
@@ -67,6 +81,15 @@ public class DinnerApp implements Runnable {
         private final int actionDurationMillis;
         private final boolean showProgress;
 
+    }
+
+    private static Thread shutdownHook(Runnable runnable) {
+        AnsiFormat format = new AnsiFormat(GREEN_TEXT(), RED_BACK(), BOLD());
+        String threadName = StringUtils.leftPad("Shutdown", Identity.MAX_LENGTH);
+
+        Thread hook = new Thread(runnable);
+        hook.setName(format.format(threadName));
+        return hook;
     }
 
 }

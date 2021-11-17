@@ -13,7 +13,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public abstract class Fork {
 
-    protected static final int FREE_FLAG = -1;
+    public static final int FREE_FLAG = -1;
 
     protected final int id;
     protected Identity leftUser;
