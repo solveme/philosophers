@@ -59,6 +59,7 @@ public class DurationColumn<R> extends ResultColumn<R, Duration> {
         private final ToLongFunction<Duration> mapper;
 
         private static final NumberFormat SMALL_VALUES_FORMATTER = new DecimalFormat("#.##");
+        private static final NumberFormat MEDIUM_VALUES_FORMATTER = new DecimalFormat("#.#");
 
         public Unit getNextUnit() {
             return this.equals(NANOS)
@@ -71,6 +72,10 @@ public class DurationColumn<R> extends ResultColumn<R, Duration> {
 
             if (units < 10) {
                 return SMALL_VALUES_FORMATTER.format(getNextUnit().getMapper().applyAsLong(duration) / 1000D);
+            }
+
+            if (units < 100) {
+                return MEDIUM_VALUES_FORMATTER.format(getNextUnit().getMapper().applyAsLong(duration) / 1000D);
             }
 
             return String.valueOf(units);

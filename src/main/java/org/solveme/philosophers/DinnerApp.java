@@ -1,5 +1,6 @@
 package org.solveme.philosophers;
 
+import ch.qos.logback.classic.Level;
 import com.diogonunes.jcolor.AnsiFormat;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,8 @@ import static org.solveme.philosophers.util.Util.OUT;
 
 @CommandLine.Command(name = "dinner")
 public class DinnerApp implements Runnable {
+
+    public static final ch.qos.logback.classic.Logger ROOT_LOGGER = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
     private static final Logger log = LoggerFactory.getLogger(DinnerApp.class);
 
@@ -33,6 +36,9 @@ public class DinnerApp implements Runnable {
     @CommandLine.Option(names = "-NP", description = "don't show progress bars during dinner, default=${DEFAULT-VALUE}")
     boolean dontShowProgress = false;
 
+    @CommandLine.Option(names = "-v", description = "Verbosity. Specify multiple -v options to increase verbosity (e.g. -vv)")
+    boolean[] verbosity;
+
     public static void main(String[] args) {
         AnsiFormat format = new AnsiFormat(RED_TEXT(), GREEN_BACK(), BOLD());
         String threadName = StringUtils.leftPad("Dinner", Identity.MAX_LENGTH);
@@ -43,6 +49,8 @@ public class DinnerApp implements Runnable {
 
     @Override
     public void run() {
+        tuneLogLevel();
+
         log.info("Initialize dinner");
 
         Settings settings = Settings.builder()
@@ -68,6 +76,13 @@ public class DinnerApp implements Runnable {
         dinner.start();
 
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
+    }
+
+    private void tuneLogLevel() {
+        if (verbosity == null || verbosity.length == 0) return;
+        if (verbosity.length == 1) ROOT_LOGGER.setLevel(Level.DEBUG);
+        if (verbosity.length == 2) ROOT_LOGGER.setLevel(Level.TRACE);
+        if (verbosity.length == 3) ROOT_LOGGER.setLevel(Level.ALL);
     }
 
 
