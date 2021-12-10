@@ -24,6 +24,11 @@ public class TestingDinner extends Dinner<TestingDinner.TestingFork, TestingDinn
         }
 
         @Override
+        public int getHolderId() {
+            return Fork.FREE_FLAG;
+        }
+
+        @Override
         public boolean isBusy() {
             return false;
         }

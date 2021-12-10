@@ -37,8 +37,8 @@ public class Synchronized extends Dinner<Synchronized.SynchronizedFork, Synchron
         }
 
         @Override
-        public boolean isBusy() {
-            return holder != FREE_FLAG;
+        public int getHolderId() {
+            return holder;
         }
 
         @Override

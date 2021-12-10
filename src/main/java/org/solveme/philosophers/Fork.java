@@ -13,7 +13,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public abstract class Fork {
 
-    public static final int FREE_FLAG = -1;
+    public static final int FREE_FLAG = -1024;
 
     protected final int id;
     protected Identity leftUser;
@@ -34,7 +34,11 @@ public abstract class Fork {
         return id;
     }
 
-    public abstract boolean isBusy();
+    public boolean isBusy() {
+        return getHolderId() != FREE_FLAG;
+    }
+
+    public abstract int getHolderId();
 
     /**
      * @param identity philosopher who tries to acquire this fork

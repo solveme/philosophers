@@ -40,8 +40,8 @@ public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> 
         }
 
         @Override
-        public boolean isBusy() {
-            return holder != FREE_FLAG;
+        public int getHolderId() {
+            return holder;
         }
 
         @Override

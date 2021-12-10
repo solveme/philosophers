@@ -35,8 +35,8 @@ public class Atomic extends Dinner<Atomic.AtomicFork, Atomic.AtomicPhilosopher> 
         }
 
         @Override
-        public boolean isBusy() {
-            return holder.get() != FREE_FLAG;
+        public int getHolderId() {
+            return holder.get();
         }
 
         @Override
@@ -47,9 +47,7 @@ public class Atomic extends Dinner<Atomic.AtomicFork, Atomic.AtomicPhilosopher> 
         @Override
         protected void release0(Identity identity) {
             // Invariant guard: only holder is allowed to release fork
-            if (identity.getSeatId() != holder.get()) {
-                throw new IllegalArgumentException(identity + " is not a holder of #" + id);
-            }
+            assert holder.get() != identity.getSeatId() : identity + " is not a holder of #" + id;
             holder.compareAndSet(identity.getSeatId(), FREE_FLAG);
         }
 
