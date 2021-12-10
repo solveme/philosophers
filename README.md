@@ -8,6 +8,7 @@ Implemented approaches:
 * [ATOMIC](src/main/java/org/solveme/philosophers/strategies/Atomic.java)
 * [SYNCHRONIZED](src/main/java/org/solveme/philosophers/strategies/Synchronized.java)
 * [NOTIFY](src/main/java/org/solveme/philosophers/strategies/Notify.java)
+* [MANAGED](src/main/java/org/solveme/philosophers/strategies/Managed.java)
 
 ## Quick Start
 
@@ -26,7 +27,7 @@ To see all available shortcuts call `make` from project root
 
 # Usage
 
-If you want to run program from IDE refer to [DinnerApp](src/main/java/org/solveme/philosophers/DinnerApp.java).
+If you want to run program from an IDE refer to [DinnerApp](src/main/java/org/solveme/philosophers/DinnerApp.java).
 
 If you want to run it from the console you have to package program first.
 There are two types of packaging:
