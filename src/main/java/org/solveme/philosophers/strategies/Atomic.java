@@ -60,7 +60,7 @@ public class Atomic extends Dinner<Atomic.AtomicFork, Atomic.AtomicPhilosopher> 
         }
 
         @Override
-        public boolean acquireForks() {
+        public boolean acquireForks0() {
             if (leftFork.take(identity)) {
                 if (rightFork.take(identity)) {
                     return true;
@@ -74,7 +74,7 @@ public class Atomic extends Dinner<Atomic.AtomicFork, Atomic.AtomicPhilosopher> 
         }
 
         @Override
-        public void releaseForks() {
+        public void releaseForks0() {
             rightFork.release(identity);
             leftFork.release(identity);
         }

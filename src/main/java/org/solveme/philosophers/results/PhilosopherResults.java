@@ -32,6 +32,7 @@ public class PhilosopherResults extends ResultTable<Philosopher.Result> {
         List<DurationColumn<Philosopher.Result>> columns = Arrays.asList(
                 column().build("Eating", DurationColumn.Unit.MILLIS, results, Philosopher.Result::getEatingDuration),
                 column().build("Thinking", DurationColumn.Unit.MILLIS, results, Philosopher.Result::getThinkingDuration),
+                column().build("Fork Access", DurationColumn.Unit.MILLIS, results, Philosopher.Result::getForkAccessDuration),
                 column().build("Burden", DurationColumn.Unit.MILLIS, results, Philosopher.Result::getIdleDuration),
                 column().build("Total", DurationColumn.Unit.MILLIS, results, Philosopher.Result::getTotalDuration)
         );

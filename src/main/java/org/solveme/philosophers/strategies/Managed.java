@@ -75,12 +75,12 @@ public class Managed extends Dinner<Managed.ManagedFork, Managed.ManagedPhilosop
         }
 
         @Override
-        public boolean acquireForks() {
+        public boolean acquireForks0() {
             return waiter.acquireForks(this);
         }
 
         @Override
-        public void releaseForks() {
+        public void releaseForks0() {
             waiter.releaseForks(this);
         }
 

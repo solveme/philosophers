@@ -74,12 +74,12 @@ public class Synchronized extends Dinner<Synchronized.SynchronizedFork, Synchron
         }
 
         @Override
-        public boolean acquireForks() {
+        public boolean acquireForks0() {
             return acquiringOrder.acquire();
         }
 
         @Override
-        public void releaseForks() {
+        public void releaseForks0() {
             acquiringOrder.releaseForks();
         }
     }

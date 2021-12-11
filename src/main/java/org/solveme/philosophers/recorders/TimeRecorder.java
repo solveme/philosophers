@@ -16,6 +16,10 @@ public class TimeRecorder {
         nanos += spentNanos;
     }
 
+    public void addSpentNanosFrom(long startNanos) {
+        nanos += System.nanoTime() - startNanos;
+    }
+
     public void addActionDuration(Util.Action action) {
         addSpentNanos(measureDuration(action));
     }

@@ -74,9 +74,31 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> e
         log.trace(message + ", interrupted: {}", runner.isInterrupted());
     }
 
-    protected abstract boolean acquireForks();
+    protected boolean acquireForks() {
+        if (isShutdown()) {
+            log.info("Skip fork acquiring due to shutdown");
+            return false;
+        }
+        logWithThreadStatus("Acquire forks");
+        long acquiringStart = System.nanoTime();
+        boolean acquiringResult = acquireForks0();
+        timeRecorder.getForkAccessDuration().addSpentNanosFrom(acquiringStart);
 
-    protected abstract void releaseForks();
+        return acquiringResult;
+    }
+
+    protected abstract boolean acquireForks0();
+
+    protected void releaseForks() {
+        if (isShutdown()) {
+            log.info("Skip fork releasing due to shutdown");
+            return;
+        }
+        logWithThreadStatus("Release forks");
+        timeRecorder.getForkAccessDuration().addActionDuration(this::releaseForks0);
+    }
+
+    protected abstract void releaseForks0();
 
     protected void eat() {
         if (isShutdown()) {
@@ -153,7 +175,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> e
         return dinner.getRightNeighbour(getSeatId());
     }
 
-    
+
     @Getter
     @RequiredArgsConstructor
     @EqualsAndHashCode
@@ -163,6 +185,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> e
         private final Duration totalDuration;
         private final Duration eatingDuration;
         private final Duration thinkingDuration;
+        private final Duration forkAccessDuration;
         private final Duration idleDuration;
 
         public static Result from(Identity identity, PhilosopherTimeRecorder timeRecorder) {
@@ -171,6 +194,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> e
                     timeRecorder.getTotalDuration().toDuration(),
                     timeRecorder.getEatingDuration().toDuration(),
                     timeRecorder.getThinkingDuration().toDuration(),
+                    timeRecorder.getForkAccessDuration().toDuration(),
                     timeRecorder.getIdleDuration()
             );
         }

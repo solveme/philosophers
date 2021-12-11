@@ -51,13 +51,13 @@ public class TestingDinner extends Dinner<TestingDinner.TestingFork, TestingDinn
         }
 
         @Override
-        public boolean acquireForks() {
+        public boolean acquireForks0() {
             // no-op
             return false;
         }
 
         @Override
-        public void releaseForks() {
+        public void releaseForks0() {
             // no-op
         }
     }

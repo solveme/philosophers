@@ -14,10 +14,11 @@ public class PhilosopherTimeRecorder {
 
     private final TimeRecorder eatingDuration = new TimeRecorder();
     private final TimeRecorder thinkingDuration = new TimeRecorder();
+    private final TimeRecorder forkAccessDuration = new TimeRecorder();
     private final TimeRecorder totalDuration = new TimeRecorder();
 
     public Duration getIdleDuration() {
-        return Duration.ofNanos(totalDuration.getNanos() - (eatingDuration.getNanos() + thinkingDuration.getNanos()));
+        return Duration.ofNanos(totalDuration.getNanos() - (eatingDuration.getNanos() + thinkingDuration.getNanos() + forkAccessDuration.getNanos()));
     }
 
 }

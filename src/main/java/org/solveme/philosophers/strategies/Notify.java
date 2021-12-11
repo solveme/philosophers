@@ -94,7 +94,7 @@ public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> 
         }
 
         @Override
-        public boolean acquireForks() {
+        public boolean acquireForks0() {
             if (leftFork.take(identity)) {
                 if (!rightFork.take(identity)) {
                     leftFork.release(identity);
@@ -106,7 +106,7 @@ public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> 
         }
 
         @Override
-        public void releaseForks() {
+        public void releaseForks0() {
             leftFork.release(identity);
             rightFork.release(identity);
         }

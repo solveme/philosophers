@@ -85,6 +85,15 @@ public class DinnerApp implements Runnable {
         if (verbosity.length == 3) ROOT_LOGGER.setLevel(Level.ALL);
     }
 
+    private static Thread shutdownHook(Runnable runnable) {
+        AnsiFormat format = new AnsiFormat(GREEN_TEXT(), RED_BACK(), BOLD());
+        String threadName = StringUtils.leftPad("Shutdown", Identity.MAX_LENGTH);
+
+        Thread hook = new Thread(runnable);
+        hook.setName(format.format(threadName));
+        return hook;
+    }
+
 
     @Builder
     @Getter
@@ -96,15 +105,6 @@ public class DinnerApp implements Runnable {
         private final int actionDurationMillis;
         private final boolean showProgress;
 
-    }
-
-    private static Thread shutdownHook(Runnable runnable) {
-        AnsiFormat format = new AnsiFormat(GREEN_TEXT(), RED_BACK(), BOLD());
-        String threadName = StringUtils.leftPad("Shutdown", Identity.MAX_LENGTH);
-
-        Thread hook = new Thread(runnable);
-        hook.setName(format.format(threadName));
-        return hook;
     }
 
 }
