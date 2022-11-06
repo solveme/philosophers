@@ -42,7 +42,7 @@ class DinnerTest {
     }
 
     /**
-     * LN LF O RF RN
+     * LN --> LF <-- Origin --> RF <-- RN
      */
     @ParameterizedTest
     @MethodSource("neighbourhoodTestCases")

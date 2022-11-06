@@ -46,7 +46,7 @@ and shaded "fat" JAR
 # Progressbar note
 
 During execution there would be several progressbars,
-that would reflect how many time each philosopher spend on thinking/eating. 
+that would reflect how much time each philosopher spend on thinking/eating. 
 This progressbars may be displayed not properly sometimes (e.g. in IDE). 
 However, they look good in my Linux terminal (both X session and plain tty).
 If you experience problems with it, you can use `-NP` option to disable progressbar displaying. 
