@@ -20,7 +20,7 @@ public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> 
 
     @Override
     public NotifyFork buildFork(Dinner<NotifyFork, NotifyPhilosopher> dinner, int forkId) {
-        return new NotifyFork(forkId);
+        return new NotifyFork(forkId, table);
     }
 
     @Override
@@ -31,12 +31,15 @@ public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> 
     @Slf4j
     static class NotifyFork extends Fork {
 
-        private static final long WAIT_TIME = TimeUnit.SECONDS.toMillis(1);
+        private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
+        private static final long ELAPSED_EPSILON_MILLIS = 5;
 
         private int holder = FREE_FLAG;
+        private final Table table;
 
-        public NotifyFork(int id) {
+        public NotifyFork(int id, Table table) {
             super(id);
+            this.table = table;
         }
 
         @Override
@@ -47,18 +50,42 @@ public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> 
         @Override
         protected synchronized boolean take0(Identity identity) {
 
+            Identity currentHolder;
+
             // Due to possible spurious wakeup during this.wait()
             // we do some additional calculations for precise waiting time
-            long waitingElapsed = WAIT_TIME;
-            long waitingStart = System.nanoTime();
+            long waitingElapsedMillis = WAIT_TIMEOUT;
+            long waitingStartNanos = 0;
+            long wakeupTimeNanos;
 
             while (isBusy()) {
+
+                currentHolder = Identity.at(holder);
+
+                if (waitingStartNanos == 0) {
+                    log.trace("Wait until {} release the fork #{}", currentHolder, id);
+                }
+
                 try {
-                    this.wait(waitingElapsed);
-                    waitingElapsed -= TimeUnit.NANOSECONDS.toMillis(waitingStart - System.nanoTime());
-                    if (waitingElapsed < 0 && isBusy()) {
-                        log.debug("Timeout during acquiring #{} by {}", id, identity);
-                        return false;
+                    waitingStartNanos = System.nanoTime();
+                    this.wait(waitingElapsedMillis);
+
+                    // At this moment we could be awakened by the thread notification or by spurious wakeup,
+                    // and we could not wait for the entire WAIT_TIMEOUT, so if fork is still busy,
+                    // we reduce waitingElapsedMillis and starting to wait again
+                    wakeupTimeNanos = System.nanoTime();
+                    waitingElapsedMillis -= TimeUnit.NANOSECONDS.toMillis(wakeupTimeNanos - waitingStartNanos);
+
+                    if (isBusy()) {
+                        if (waitingElapsedMillis <= ELAPSED_EPSILON_MILLIS) {
+                            log.debug("Timeout during acquiring #{} by {}", id, identity);
+                            return false;
+                        } else {
+                            log.trace("Continue to wait until {} release the fork #{}", currentHolder, id);
+                        }
+                    } else {
+                        log.debug("Finish waiting due to fork #{} release by {}", id, currentHolder);
+                        break;
                     }
 
                 } catch (InterruptedException e) {
@@ -68,6 +95,7 @@ public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> 
                 }
             }
 
+            log.debug("Take {} fork #{}", table.sideOfNearFork(id, identity).name().toLowerCase(), id);
             holder = identity.getSeatId();
 
             return true;
@@ -75,6 +103,7 @@ public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> 
 
         @Override
         protected synchronized void release0(Identity identity) {
+            log.debug("Release {} fork #{}", table.sideOfNearFork(id, identity).name().toLowerCase(), id);
             holder = FREE_FLAG;
 
             // Only one thread may wait on this fork
@@ -96,19 +125,21 @@ public class Notify extends Dinner<Notify.NotifyFork, Notify.NotifyPhilosopher> 
         @Override
         public boolean acquireForks0() {
             if (leftFork.take(identity)) {
-                if (!rightFork.take(identity)) {
+                if (rightFork.take(identity)) {
+                    return true;
+                } else {
                     leftFork.release(identity);
                     return false;
                 }
             }
 
-            return true;
+            return false;
         }
 
         @Override
         public void releaseForks0() {
-            leftFork.release(identity);
             rightFork.release(identity);
+            leftFork.release(identity);
         }
     }
 
