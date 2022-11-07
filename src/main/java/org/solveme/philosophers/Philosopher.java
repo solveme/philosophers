@@ -90,10 +90,6 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> e
     protected abstract boolean acquireForks0();
 
     protected void releaseForks() {
-        if (isShutdown()) {
-            log.info("Skip fork releasing due to shutdown");
-            return;
-        }
         logWithThreadStatus("Release forks");
         timeRecorder.getForkAccessDuration().addActionDuration(this::releaseForks0);
     }
@@ -111,7 +107,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> e
 
     protected void eat0() {
         try {
-            TimeUnit.MILLISECONDS.sleep(calculateActionDuration());
+            TimeUnit.MILLISECONDS.sleep(calculateActionDurationMillis());
 
         } catch (InterruptedException e) {
             logActionInterruption("eating");
@@ -134,7 +130,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> e
 
     protected void think0() {
         try {
-            TimeUnit.MILLISECONDS.sleep(calculateActionDuration());
+            TimeUnit.MILLISECONDS.sleep(calculateActionDurationMillis());
 
         } catch (InterruptedException e) {
             logActionInterruption("thinking");
@@ -155,7 +151,7 @@ public abstract class Philosopher<F extends Fork, P extends Philosopher<F, P>> e
         }
     }
 
-    protected long calculateActionDuration() {
+    protected long calculateActionDurationMillis() {
         return dinner.settings.getActionDurationMillis() + (long) (Math.random() * dinner.settings.getActionDurationMillis());
     }
 

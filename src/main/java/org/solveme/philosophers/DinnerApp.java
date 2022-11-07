@@ -28,10 +28,10 @@ public class DinnerApp implements Runnable {
     int philosophersCount = Identity.values().length;
 
     @CommandLine.Option(names = "-D", paramLabel = "SECONDS", description = "dinner duration in seconds, default=${DEFAULT-VALUE}")
-    int dinnerDuration = 10;
+    int dinnerDurationSeconds = 10;
 
-    @CommandLine.Option(names = "-A", paramLabel = "SECONDS", description = "action (eating/thinking) duration factor in millis, default=${DEFAULT-VALUE}")
-    int actionDuration = 20;
+    @CommandLine.Option(names = "-A", paramLabel = "MILLISECONDS", description = "action (eating/thinking) duration factor in millis, default=${DEFAULT-VALUE}")
+    int actionDurationMillis = 100;
 
     @CommandLine.Option(names = "-NP", description = "don't show progress bars during dinner, default=${DEFAULT-VALUE}")
     boolean dontShowProgress = false;
@@ -55,8 +55,8 @@ public class DinnerApp implements Runnable {
 
         Settings settings = Settings.builder()
                 .seatCount(philosophersCount)
-                .durationSeconds(dinnerDuration)
-                .actionDurationMillis(actionDuration)
+                .durationSeconds(dinnerDurationSeconds)
+                .actionDurationMillis(actionDurationMillis)
                 .showProgress(!dontShowProgress)
                 .build();
 

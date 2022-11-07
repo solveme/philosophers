@@ -3,6 +3,7 @@ package org.solveme.philosophers;
 
 import lombok.RequiredArgsConstructor;
 
+import javax.annotation.Nonnull;
 import java.util.function.ToIntFunction;
 
 import static org.solveme.philosophers.Table.Side.LEFT;
@@ -30,6 +31,13 @@ public class Table {
 
     public int rightForkIdFor(int seatId) {
         return normalizeSeatId(RIGHT.forkIdOf(seatId));
+    }
+
+    @Nonnull
+    public Side sideOfNearFork(int forkId, Identity philosopher) {
+        if (normalizeSeatId(LEFT.forkIdOf(philosopher)) == forkId) return LEFT;
+        if (normalizeSeatId(RIGHT.forkIdOf(philosopher)) == forkId) return RIGHT;
+        throw new RuntimeException(philosopher + " attempts to get side of non-near fork #" + forkId);
     }
 
     public int normalizeSeatId(int seatId) {

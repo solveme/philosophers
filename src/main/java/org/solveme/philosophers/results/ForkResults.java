@@ -84,7 +84,7 @@ public class ForkResults extends ResultTable<Fork.Result> {
         public String formatValue(Fork.Result result) {
             String leftUser = result.getLeftUser().toString();
             String rightUser = result.getRightUser().toString();
-            return StringUtils.rightPad("F" + result.getId() + " " + leftUser + " / " + rightUser, getWidth());
+            return StringUtils.rightPad("F" + result.getId() + " " + rightUser + " / " + leftUser, getWidth());
         }
 
     }

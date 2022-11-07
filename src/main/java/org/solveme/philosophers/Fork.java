@@ -42,7 +42,7 @@ public abstract class Fork {
 
     /**
      * @param identity philosopher who tries to acquire this fork
-     * @return true in fork was successfully acquired
+     * @return true if fork was successfully acquired
      */
     public boolean take(Identity identity) {
         if (take0(identity)) {
@@ -66,10 +66,12 @@ public abstract class Fork {
         release0(identity);
 
         if (identity == leftUser) {
-            timeRecorder.recordLeftUsage(System.nanoTime() - taken);
+            log.trace("Record right usage of #{} by {}", id, identity);
+            timeRecorder.recordRightUsage(System.nanoTime() - taken);
 
         } else if (identity == rightUser) {
-            timeRecorder.recordRightUsage(System.nanoTime() - taken);
+            log.trace("Record left usage of #{} by {}", id, identity);
+            timeRecorder.recordLeftUsage(System.nanoTime() - taken);
 
         } else {
             throw new IllegalArgumentException(identity + " is not able to use fork #" + id);

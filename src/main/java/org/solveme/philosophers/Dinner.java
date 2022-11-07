@@ -66,7 +66,7 @@ public abstract class Dinner<F extends Fork, P extends Philosopher<F, P>> {
         }
 
         final Thread.UncaughtExceptionHandler exceptionHandler = (thread, throwable) -> {
-            log.error(throwable.getMessage());
+            log.error(throwable.getMessage(), throwable);
             abort();
         };
 
